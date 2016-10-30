@@ -1,6 +1,7 @@
 import websockets
 import asyncio
 import json
+from contextlib import suppress
 
 
 @asyncio.coroutine
@@ -13,9 +14,12 @@ def send_encoded():
             encoded_message = {
                 'msg': message,
             }
-            d = json.dumps(encoded_message)  #encodes the dictionary "d"
+            d = json.dumps(encoded_message) #encodes the dictionary "d"
             yield from websocket.send(d)
 
+            with suppress(asyncio.TimeroutError):
+                msg = await asyncio.wait_for(websocket.recv(), .1)
+                json.loads(msg)
     finally:
 
         yield from websocket.close()

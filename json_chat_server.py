@@ -2,16 +2,22 @@ import websockets
 import asyncio
 import json
 
-async def receive_encoded(websocket, path):
+all_websockets = set()
 
+
+async def receive_encoded(websocket, path):
+    all_websockets.add(websocket)
     try:
         while True:
             encoded_message = await websocket.recv()
             dictionary = json.loads(encoded_message)
             print(dictionary['msg'])
 
-    except websockets.exceptions.ConnectionClosed: pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
 
+    finally:
+        all_websockets.remove(websocket)
 
 start_server = websockets.serve(receive_encoded, "0.0.0.0", 8054)
 
