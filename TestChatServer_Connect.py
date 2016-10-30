@@ -9,11 +9,13 @@ def SendMessage():
         while True:
             message = input("Your message: ")
             yield from websocket.send(message)
-            
 
-
+            response = yield from websocket.recv()
+            print(response)
     finally:
 
         yield from websocket.close()
+
+
 
 asyncio.get_event_loop().run_until_complete(SendMessage())
