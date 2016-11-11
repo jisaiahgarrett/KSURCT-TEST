@@ -45,3 +45,10 @@ class ClientlessWebSocketServer(object):
         # logger.debug("WS seng msg")
         for ws in self._active_connections:
             asyncio.ensure_future(ws.send(msg))
+
+
+server = ClientlessWebSocketServer(port)
+
+server.__init__(port)
+while True:
+    server.start_server()
