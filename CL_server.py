@@ -18,6 +18,7 @@ class CLserver(object):
 
     async def handle_new_connection(self, ws, path):
         self._active_connections.add(ws)
+        # print(ws)
         with suppress(websockets.ConnectionClosed):
             while True:
                 result = await ws.recv()
@@ -26,6 +27,11 @@ class CLserver(object):
 
     async def handle_msg(self, msg):
         print(msg)
+        await self.send(msg)
+
+    async def send(self, msg):
+        for ws in self._active_connections:
+            asyncio.ensure_future(ws.send(msg))
 
 server = CLserver(port)
 
