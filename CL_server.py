@@ -14,9 +14,11 @@ class CLserver(object):
         self.port = port
 
     async def start_server(self):
+        logger.info('server starting up')
         self.server = await websockets.serve(self.handle_new_connection, '0.0.0.0', self.port)
 
     async def handle_new_connection(self, ws, path):
+        logger.debug('new connection to server')
         self._active_connections.add(ws)
         # print(ws)
         with suppress(websockets.ConnectionClosed):
@@ -26,10 +28,12 @@ class CLserver(object):
         self._active_connections.remove(ws)
 
     async def handle_msg(self, msg):
-        print(msg)
+        logger.debug('new message handled')
+        print(msg)  # was commented out
         await self.send(msg)
 
     async def send(self, msg):
+        logger.debug('sending new message')
         for ws in self._active_connections:
             asyncio.ensure_future(ws.send(msg))
 
