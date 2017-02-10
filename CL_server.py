@@ -4,9 +4,14 @@ import websockets
 from logging import Logger
 from contextlib import suppress
 
+import Adafruit_PCA9685 # servo libraries from Adafruit
+
 port = 8055
 logger = Logger(__name__)
 
+# Initialize the servo with default I2C address (0x40)
+servo = Adafruit_PCA9685.PCA9685()
+servo.set_pwm_freq(60)
 
 class CLserver(object):
     def __init__(self, port):
@@ -29,8 +34,12 @@ class CLserver(object):
 
     async def handle_msg(self, msg):
         logger.debug('new message handled')
-        print(msg)  # was commented out
-        await self.send(msg)
+        msg = msg.split() # This DOES add latency to the messages (having to parse all 4 buttons rather than a single)
+        if msg[0] == "True":
+            servo.set_pwm(0, 0, 650) # Configuration high for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.
+        elif msg[0] == "False":
+            servo.set_pwm(0, 0, 170) # Configuration low for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.  
+        await self.send(msg[0])
 
     async def send(self, msg):
         logger.debug('sending new message')
