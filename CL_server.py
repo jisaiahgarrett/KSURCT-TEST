@@ -34,10 +34,10 @@ class CLserver(object):
 
     async def handle_msg(self, msg):
         logger.debug('new message handled')
-        msg = msg.split() # This DOES add latency to the messages (having to parse all 4 buttons rather than a single)
-        if msg[0] == "True":
+        msg = msg.split() # This DOES add latency to the messages (having to parse all 4 buttons rather than a single); change this to bitmasking a number for speed.
+        if msg[0] == "True": # If the X button is held down, turn the servo.
             servo.set_pwm(0, 0, 650) # Configuration high for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.
-        elif msg[0] == "False":
+        elif msg[0] == "False": # If the X button is released, restore the servo.
             servo.set_pwm(0, 0, 170) # Configuration low for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.  
         await self.send(msg[0])
 
