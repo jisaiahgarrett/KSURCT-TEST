@@ -15,6 +15,18 @@ shoulder1.set_pwm_freq(60)
 shoulder2 = Adafruit_PCA9685.PCA9685()
 shoulder2.set_pwm_freq(60)
 shoulder2_alt = 426
+leftMotor = Adafruit_PCA9685.PCA9685()
+leftMotor_pwr = 0
+leftMotor.set_pwm_freq(20000)
+rightMotor = Adafruit_PCA9685.PCA9685()
+rightMotor_pwr = 0
+rightMotor.set_pwm_freq(20000)
+
+# Servo channel information
+SHOULDER1_CHA = 0
+SHOULDER2_CHA = 1
+LEFTM_CHA = 15
+RIGHTM_CHA = 14
 
 class CLserver(object):
     def __init__(self, port):
@@ -38,33 +50,35 @@ class CLserver(object):
     async def handle_msg(self, msg):
         logger.debug('new message handled')
         global shoulder2_alt
-      #  print(msg)
-       # if msg[0] == "True": # If the X button is held down, turn the servo.
-       #    servo.set_pwm(0, 0, 385) # Configuration high for Parallax servo.  CHANGE THIS TO SERVO YOU ARE USING.
-       # elif msg[0] == "False": # If the X button is released, restore the servo.
-       #     servo.set_pwm(0, 0, 391) # Configuration low for Parallax servo.  CHANGE THIS TO SERVO YOU ARE USING.  
-       # elif msg[2] == "True":
-       #     servo.set_pwm(0, 0, 398)
+        global leftMotor_pwr
+        global rightMotor_pwr
         if msg == "2": # Left - X
             shoulder1.set_pwm(0, 0, 398)
         elif msg == "1": # Up - Y
             if shoulder2_alt >= 600: # servo maximum
                 shoulder2_alt = 599
           #  shoulder2.set_pwm(1, 0, 398)
-            shoulder2.set_pwm(1, 0, shoulder2_alt)
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt += 1 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "8": # Down - A
           #  shoulder2.set_pwm(1, 0, 382)
             if shoulder2_alt <= 299:  # servo minimum
                 shoulder2_alt = 300
-            shoulder2.set_pwm(1, 0, shoulder2_alt)
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt -= 1 # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4": # Right - B
-            shoulder1.set_pwm(0, 0, 385)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 385)
+        elif msg == "3": # Left Trigger (reverse)
+            leftMotor_pwr = rightMotor_pwr = 0
+            leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
+            rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
+        elif msg == "7": # Right Trigger (forward)
+            leftMotor_pwr = rightMotor_pwr = 4000
+            leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
+            rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
         else:
-            shoulder1.set_pwm(0, 0, 392)
-          #  shoulder2.set_pwm(1, 0, 390)
-          #  shoulder2.set_pwm(1, 0, 240)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 392)
+            leftMotor.set_pwm(LEFTM_CHA, 0, int(msg))
         print(shoulder2_alt)
         await self.send(msg)
 
