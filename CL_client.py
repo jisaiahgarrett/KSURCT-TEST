@@ -8,9 +8,7 @@ Controller.init()
 controller = Controller(0)
 
 async def SendMessage():
-    websocket = await websockets.connect('ws://10.243.193.47:8055/')
-    #this is old IP 'ws://10.243.242.98:8055/' Isaiah changed on 2/6/17
-    # zerotier IP of server
+    websocket = await websockets.connect('ws://10.243.193.47:8055/')  # zerotier IP of server
     try:
         while True:
             controller.update()
@@ -27,13 +25,14 @@ async def SendMessage():
             elif controller.right_trigger() == 1:
                 message = 0b0111
 
-            left_t = int(controller.left_trigger() / 8)
-            right_t = int(controller.right_trigger() / 8)
+            left_t = int(controller.left_trigger() >> 3)
+            right_t = int(controller.right_trigger() >> 3)
             if left_t < 0:
-                left_t = 48
+                left_t = 0
             if right_t < 0:
-                right_t = 48
+                right_t = 0
             message = right_t
+
             # The left and right analog sticks--------------
             # message = "{} {} {} {}".format(controller.left_y(), controller.left_x(), controller.right_x(), controller.right_y())
 
