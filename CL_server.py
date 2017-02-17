@@ -9,9 +9,12 @@ import Adafruit_PCA9685 # servo libraries from Adafruit
 port = 8055
 logger = Logger(__name__)
 
-# Initialize the servo with default I2C address (0x40)
-servo = Adafruit_PCA9685.PCA9685()
-servo.set_pwm_freq(60)
+# Initialize the servos with default I2C address (0x40)
+shoulder1 = Adafruit_PCA9685.PCA9685()
+shoulder1.set_pwm_freq(60)
+shoulder2 = Adafruit_PCA9685.PCA9685()
+shoulder2.set_pwm_freq(60)
+shoulder2_alt = 426
 
 class CLserver(object):
     def __init__(self, port):
@@ -34,12 +37,36 @@ class CLserver(object):
 
     async def handle_msg(self, msg):
         logger.debug('new message handled')
-        msg = msg.split() # This DOES add latency to the messages (having to parse all 4 buttons rather than a single); change this to bitmasking a number for speed.
-        if msg[0] == "True": # If the X button is held down, turn the servo.
-            servo.set_pwm(0, 0, 650) # Configuration high for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.
-        elif msg[0] == "False": # If the X button is released, restore the servo.
-            servo.set_pwm(0, 0, 170) # Configuration low for Hirec HS-605MG servo.  CHANGE THIS TO SERVO YOU ARE USING.  
-        await self.send(msg[0])
+        global shoulder2_alt
+      #  print(msg)
+       # if msg[0] == "True": # If the X button is held down, turn the servo.
+       #    servo.set_pwm(0, 0, 385) # Configuration high for Parallax servo.  CHANGE THIS TO SERVO YOU ARE USING.
+       # elif msg[0] == "False": # If the X button is released, restore the servo.
+       #     servo.set_pwm(0, 0, 391) # Configuration low for Parallax servo.  CHANGE THIS TO SERVO YOU ARE USING.  
+       # elif msg[2] == "True":
+       #     servo.set_pwm(0, 0, 398)
+        if msg == "2": # Left - X
+            shoulder1.set_pwm(0, 0, 398)
+        elif msg == "1": # Up - Y
+            if shoulder2_alt >= 600: # servo maximum
+                shoulder2_alt = 599
+          #  shoulder2.set_pwm(1, 0, 398)
+            shoulder2.set_pwm(1, 0, shoulder2_alt)
+            shoulder2_alt += 1 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
+        elif msg == "8": # Down - A
+          #  shoulder2.set_pwm(1, 0, 382)
+            if shoulder2_alt <= 299:  # servo minimum
+                shoulder2_alt = 300
+            shoulder2.set_pwm(1, 0, shoulder2_alt)
+            shoulder2_alt -= 1 # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
+        elif msg == "4": # Right - B
+            shoulder1.set_pwm(0, 0, 385)
+        else:
+            shoulder1.set_pwm(0, 0, 392)
+          #  shoulder2.set_pwm(1, 0, 390)
+          #  shoulder2.set_pwm(1, 0, 240)
+        print(shoulder2_alt)
+        await self.send(msg)
 
     async def send(self, msg):
         logger.debug('sending new message')
