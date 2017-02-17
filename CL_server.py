@@ -66,19 +66,21 @@ class CLserver(object):
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4":  # Right - B
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 2*SHOULDER1_ALT)
-        elif msg == "3":  # Left Trigger (reverse)
-            leftMotor_pwr = rightMotor_pwr = 0
-            leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
-            rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
-        elif msg == "7":  # Right Trigger (forward)
-            leftMotor_pwr = rightMotor_pwr = 4000
-            leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
-            rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
+       # elif msg == "3":  # Left Trigger (reverse)
+       #     leftMotor_pwr = rightMotor_pwr = 0
+       #     leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
+       #     rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
+       # elif msg == "7":  # Right Trigger (forward)
+       #     leftMotor_pwr = rightMotor_pwr = 4000
+       #     leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
+       #     rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
         else:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
-            leftMotor.set_pwm(LEFTM_CHA, 0, 0)  # Convert the message string into an acutal PWM value that the motor can use
-
-        print(shoulder2_alt)  # debugging purposes (seeing the value change)
+            if msg != "False False False False":  # If input isn't the garbage default
+                leftMotor.set_pwm(LEFTM_CHA, 0, int(msg))  # Convert the message string into an acutal PWM value that the motor can use
+            else:
+                leftMotor.set_pwm(LEFTM_CHA, 0, 0)
+        # print(shoulder2_alt)  # debugging purposes (seeing the value change)
         await self.send(msg)
 
     async def send(self, msg):
