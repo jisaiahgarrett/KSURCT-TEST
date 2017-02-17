@@ -11,7 +11,6 @@ async def SendMessage():
     websocket = await websockets.connect('ws://10.243.193.47:8055/')
     #this is old IP 'ws://10.243.242.98:8055/' Isaiah changed on 2/6/17
     # zerotier IP of server
-    # was ws://localhost:8055/
     try:
         while True:
             controller.update()
@@ -25,6 +24,16 @@ async def SendMessage():
                 message = 0b1000
             elif controller.b() == 1:
                 message = 0b0100
+            elif controller.right_trigger() == 1:
+                message = 0b0111
+
+            left_t = int(controller.left_trigger() / 8)
+            right_t = int(controller.right_trigger() / 8)
+            if left_t < 0:
+                left_t = 48
+            if right_t < 0:
+                right_t = 48
+            message = right_t
             # The left and right analog sticks--------------
             # message = "{} {} {} {}".format(controller.left_y(), controller.left_x(), controller.right_x(), controller.right_y())
 
@@ -33,7 +42,7 @@ async def SendMessage():
 
             # The left and right bumpers
             # message = "{} {}".format(controller.left_bumper(), controller.right_bumper())
-            if(message): #  and (controller.left_bumper() is not False)):
+            if(message):
                 await websocket.send(str(message))
             # else:
             #     await websocket.send("false")
