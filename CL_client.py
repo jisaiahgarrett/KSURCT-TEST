@@ -23,8 +23,6 @@ async def SendMessage():
                 message = 0b1000
             elif controller.b() == 1:
                 message = 0b0100
-            elif controller.right_trigger() == 1:
-                message = 0b0111
             else:
                 left_t = int(controller.left_trigger() >> 3)
                 right_t = int(controller.right_trigger() >> 3)
@@ -32,8 +30,10 @@ async def SendMessage():
                     left_t = 0
                 if right_t < 0:
                     right_t = 0
-                if right_t > 0 or left_t > 0:
-                     message = right_t  # Currently testing this but it'll be one of the motor settings (depending on fwd/rev)
+                if right_t > 0:
+                     message = right_t  # Forward (positive value)
+                elif left_t > 0:
+                     message = -left_t  # Reverse (hence the negative)
 
             # The left and right analog sticks--------------
             # message = "{} {} {} {}".format(controller.left_y(), controller.left_x(), controller.right_x(), controller.right_y())
