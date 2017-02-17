@@ -6,6 +6,7 @@ from xbox import Controller
 
 Controller.init()
 controller = Controller(0)
+counter = 0
 
 async def SendMessage():
     websocket = await websockets.connect('ws://10.243.193.47:8055/')  # zerotier IP of server
@@ -24,14 +25,15 @@ async def SendMessage():
                 message = 0b0100
             elif controller.right_trigger() == 1:
                 message = 0b0111
-
-            left_t = int(controller.left_trigger() >> 3)
-            right_t = int(controller.right_trigger() >> 3)
-            if left_t < 0:
-                left_t = 0
-            if right_t < 0:
-                right_t = 0
-            message = right_t
+            else:
+                left_t = int(controller.left_trigger() >> 3)
+                right_t = int(controller.right_trigger() >> 3)
+                if left_t < 0:
+                    left_t = 0
+                if right_t < 0:
+                    right_t = 0
+                if right_t > 0 or left_t > 0:
+                     message = right_t  # Currently testing this but it'll be one of the motor settings (depending on fwd/rev)
 
             # The left and right analog sticks--------------
             # message = "{} {} {} {}".format(controller.left_y(), controller.left_x(), controller.right_x(), controller.right_y())
@@ -46,8 +48,15 @@ async def SendMessage():
             # else:
             #     await websocket.send("false")
             with suppress(asyncio.TimeoutError):
+                global counter
                 response = await asyncio.wait_for(websocket.recv(), 1)
-                print(response)
+                if response == "False False False False":
+                    response = "NOP"
+                    counter += 1
+                else:
+                    counter = 0
+                if counter <= 1:
+                    print(response)
     finally:
 
         await websocket.close()
