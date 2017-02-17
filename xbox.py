@@ -200,10 +200,10 @@ class Controller(object):
 
         self.left_x = DecimalAxisState()
         self.left_y = DecimalAxisState()
-        self.left_trigger = PulledTriggerState()
+        self.left_trigger = CurrentButtonState()  # Changed from PullTrigger
         self.right_x = DecimalAxisState()
         self.right_y = DecimalAxisState()
-        self.right_trigger = PulledTriggerState()
+        self.right_trigger = CurrentButtonState()  # Changed from PullTrigger
 
         self.hat = HatSwitchesState()
 
