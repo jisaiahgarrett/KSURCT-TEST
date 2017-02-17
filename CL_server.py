@@ -12,6 +12,7 @@ logger = Logger(__name__)
 # Initialize the servos with default I2C address (0x40)
 shoulder1 = Adafruit_PCA9685.PCA9685()
 shoulder1.set_pwm_freq(60)
+SHOULDER1_ALT = 125
 shoulder2 = Adafruit_PCA9685.PCA9685()
 shoulder2.set_pwm_freq(60)
 shoulder2_alt = 426
@@ -52,7 +53,7 @@ class CLserver(object):
         global leftMotor_pwr
         global rightMotor_pwr
         if msg == "2":  # Left - X
-            shoulder1.set_pwm(0, 0, 398)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, SHOULDER1_ALT)
         elif msg == "1":  # Up - Y
             if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                 shoulder2_alt = 599
@@ -64,7 +65,7 @@ class CLserver(object):
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4":  # Right - B
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, 385)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 2*SHOULDER1_ALT)
         elif msg == "3":  # Left Trigger (reverse)
             leftMotor_pwr = rightMotor_pwr = 0
             leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
@@ -74,8 +75,9 @@ class CLserver(object):
             leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
             rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
         else:
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, 392)  # Restore the servo to a safe value if not doing anything
-            leftMotor.set_pwm(LEFTM_CHA, 0, int(msg))  # Convert the message string into an acutal PWM value that the motor can use
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
+            leftMotor.set_pwm(LEFTM_CHA, 0, 0)  # Convert the message string into an acutal PWM value that the motor can use
+
         print(shoulder2_alt)  # debugging purposes (seeing the value change)
         await self.send(msg)
 
