@@ -31,8 +31,9 @@ LEFTM_CHA = 15
 RIGHTM_CHA = 14
 
 # Set up the GPIO pin for toggling reverse/forward motors.
-GPIO.setmode(GPIO.BOARD)
-GPI.setup(12, GPIO.OUT)
+GPIO.setmode(GPIO.BCM)
+GPIO_PIN = 18
+GPIO.setup(GPIO_PIN, GPIO.OUT)
 
 class CLserver(object):
     def __init__(self, port):
@@ -73,12 +74,19 @@ class CLserver(object):
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 2*SHOULDER1_ALT)
         else:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
-            if msg != "False False False False" and int(msg) < 0:  # If input isn't the garbage default
-                leftMotor.set_pwm(LEFTM_CHA, 0, int(msg))  # Convert the message string into an acutal PWM value that the motor can use
+            if msg != "False False False False":  # If the input is an actual state change
+               msg = int(msg)  # Convert the message string into an actual PWM value that the motor can use
+               if msg < 0:
+                    GPIO.output(GPIO_PIN, GPIO.LOW)
+                    msg = -msg
+               else:
+                    GPIO.output(GPIO_PIN, GPIO.HIGH)
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg)
             else:
                 leftMotor.set_pwm(LEFTM_CHA, 0, 0)
+                GPIO.output(GPIO_PIN, GPIO.HIGH)
         # print(msg)  # debugging purposes (seeing the value change)
-        await self.send(msg)
+        await self.send(str(msg))
 
     async def send(self, msg):
         logger.debug('sending new message')
