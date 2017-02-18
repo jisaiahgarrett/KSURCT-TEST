@@ -13,27 +13,27 @@ logger = Logger(__name__)
 # Initialize the servos with default I2C address (0x40)
 shoulder1 = Adafruit_PCA9685.PCA9685()
 shoulder1.set_pwm_freq(60)
-SHOULDER1_ALT = 125
+SHOULDER1_ALT = 300
 shoulder2 = Adafruit_PCA9685.PCA9685()
 shoulder2.set_pwm_freq(60)
-shoulder2_alt = 426
+shoulder2_alt = 492
 leftMotor = Adafruit_PCA9685.PCA9685()
-leftMotor_pwr = 0
-leftMotor.set_pwm_freq(20000)
+leftMotor.set_pwm_freq(1600)
 rightMotor = Adafruit_PCA9685.PCA9685()
-rightMotor_pwr = 0
-rightMotor.set_pwm_freq(20000)
+rightMotor.set_pwm_freq(1600)
 
 # Servo channel information
 SHOULDER1_CHA = 0
 SHOULDER2_CHA = 1
-LEFTM_CHA = 15
-RIGHTM_CHA = 14
+LEFTM_CHA = 14
+RIGHTM_CHA = 15
 
 # Set up the GPIO pin for toggling reverse/forward motors.
 GPIO.setmode(GPIO.BCM)
-GPIO_PIN = 18
-GPIO.setup(GPIO_PIN, GPIO.OUT)
+GPIO_FWD_PIN = 18
+GPIO_REV_PIN = 17
+GPIO.setup(GPIO_FWD_PIN, GPIO.OUT)
+GPIO.setup(GPIO_REV_PIN, GPIO.OUT)
 
 class CLserver(object):
     def __init__(self, port):
@@ -56,8 +56,6 @@ class CLserver(object):
     async def handle_msg(self, msg):
         logger.debug('new message handled')
         global shoulder2_alt
-        global leftMotor_pwr
-        global rightMotor_pwr
         if msg == "2":  # Left - X
             shoulder1.set_pwm(SHOULDER1_CHA, 0, SHOULDER1_ALT)
         elif msg == "1":  # Up - Y
@@ -77,17 +75,20 @@ class CLserver(object):
             if msg != "False False False False":  # If the input is an actual state change
                msg = int(msg)  # Convert the message string into an actual PWM value that the motor can use
                if msg < 0:
-                    GPIO.output(GPIO_PIN, GPIO.LOW)
+                    GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+                    GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
                     msg = -msg
-                    print("LOW!")
                else:
-                    GPIO.output(GPIO_PIN, GPIO.HIGH)
-                    print("HIGH!")
+                    GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
+                    GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+
                leftMotor.set_pwm(LEFTM_CHA, 0, msg)
-               print("SET MOTOR")
+               rightMotor.set_pwm(RIGHTM_CHA, 0, msg)
             else:
                 leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-                GPIO.output(GPIO_PIN, GPIO.LOW)
+                rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
+                GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+                GPIO.output(GPIO_REV_PIN, GPIO.LOW)
         # print(msg)  # debugging purposes (seeing the value change)
         await self.send(str(msg))
 
