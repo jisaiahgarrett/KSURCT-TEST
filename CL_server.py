@@ -1,5 +1,6 @@
 import asyncio
 import websockets
+import RPi.GPIO as GPIO
 
 from logging import Logger
 from contextlib import suppress
@@ -28,6 +29,10 @@ SHOULDER1_CHA = 0
 SHOULDER2_CHA = 1
 LEFTM_CHA = 15
 RIGHTM_CHA = 14
+
+# Set up the GPIO pin for toggling reverse/forward motors.
+GPIO.setmode(GPIO.BOARD)
+GPI.setup(12, GPIO.OUT)
 
 class CLserver(object):
     def __init__(self, port):
@@ -66,21 +71,13 @@ class CLserver(object):
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4":  # Right - B
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 2*SHOULDER1_ALT)
-       # elif msg == "3":  # Left Trigger (reverse)
-       #     leftMotor_pwr = rightMotor_pwr = 0
-       #     leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
-       #     rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
-       # elif msg == "7":  # Right Trigger (forward)
-       #     leftMotor_pwr = rightMotor_pwr = 4000
-       #     leftMotor.set_pwm(LEFTM_CHA, 0, leftMotor_pwr)
-       #     rightMotor.set_pwm(RIGHTM_CHA, 0, rightMotor_pwr)
         else:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
-            if msg != "False False False False":  # If input isn't the garbage default
+            if msg != "False False False False" and int(msg) < 0:  # If input isn't the garbage default
                 leftMotor.set_pwm(LEFTM_CHA, 0, int(msg))  # Convert the message string into an acutal PWM value that the motor can use
             else:
                 leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-        # print(shoulder2_alt)  # debugging purposes (seeing the value change)
+        # print(msg)  # debugging purposes (seeing the value change)
         await self.send(msg)
 
     async def send(self, msg):
