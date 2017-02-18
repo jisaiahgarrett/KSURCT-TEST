@@ -13,14 +13,15 @@ logger = Logger(__name__)
 # Initialize the servos with default I2C address (0x40)
 shoulder1 = Adafruit_PCA9685.PCA9685()
 shoulder1.set_pwm_freq(60)
-SHOULDER1_ALT = 300
+shoulder1_alt = 300  # FIGURE OUT WHY THE SHOULDER SERVO IS CHANGING CONSTANTLY!
 shoulder2 = Adafruit_PCA9685.PCA9685()
-shoulder2.set_pwm_freq(60)
+#shoulder2.set_pwm_freq(60)
 shoulder2_alt = 492
+
 leftMotor = Adafruit_PCA9685.PCA9685()
-leftMotor.set_pwm_freq(1600)
+#leftMotor.set_pwm_freq(1600)
 rightMotor = Adafruit_PCA9685.PCA9685()
-rightMotor.set_pwm_freq(1600)
+#rightMotor.set_pwm_freq(1600)
 
 # Servo channel information
 SHOULDER1_CHA = 0
@@ -57,7 +58,7 @@ class CLserver(object):
         logger.debug('new message handled')
         global shoulder2_alt
         if msg == "2":  # Left - X
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, SHOULDER1_ALT)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt << 1)
         elif msg == "1":  # Up - Y
             if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                 shoulder2_alt = 599
@@ -69,7 +70,7 @@ class CLserver(object):
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4":  # Right - B
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, 2*SHOULDER1_ALT)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
         else:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
             if msg != "False False False False":  # If the input is an actual state change
