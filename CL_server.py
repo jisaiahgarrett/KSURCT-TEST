@@ -79,12 +79,15 @@ class CLserver(object):
                if msg < 0:
                     GPIO.output(GPIO_PIN, GPIO.LOW)
                     msg = -msg
+                    print("LOW!")
                else:
                     GPIO.output(GPIO_PIN, GPIO.HIGH)
+                    print("HIGH!")
                leftMotor.set_pwm(LEFTM_CHA, 0, msg)
+               print("SET MOTOR")
             else:
                 leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-                GPIO.output(GPIO_PIN, GPIO.HIGH)
+                GPIO.output(GPIO_PIN, GPIO.LOW)
         # print(msg)  # debugging purposes (seeing the value change)
         await self.send(str(msg))
 
