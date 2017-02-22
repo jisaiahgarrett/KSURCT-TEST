@@ -13,46 +13,37 @@ async def SendMessage():
     try:
         while True:
             controller.update()
-            # The x,a,b,y-----------------------------------  Binary representation: abxy
-            message = "{} {} {} {}".format(controller.x(), controller.y(), controller.b(), controller.a())
-            if controller.x() == 1:
-                message = 0b0010
-            elif controller.y() == 1:
-                message = 0b0001
-            elif controller.a() == 1:
-                message = 0b1000
-            elif controller.b() == 1:
-                message = 0b0100
-            else:
-                left_t = int(controller.left_trigger() >> 3)
-                right_t = int(controller.right_trigger() >> 3)
-                if right_t > 0:
-                    message = right_t  # Forward (positive value)
-                elif left_t > 0:
-                    message = -left_t  # Reverse (hence the negative)
-            # The left and right analog sticks--------------
-            # message = "{} {} {} {}".format(controller.left_y(), controller.left_x(), controller.right_x(), controller.right_y())
+            robot = {}
+            robot['x'] = 1 if controller.x() else 0
+            robot['y'] = 1 if controller.y() else 0
+            robot['a'] = 1 if controller.a() else 0
+            robot['b'] = 1 if controller.b() else 0
+            robot['fwd'] =  int(controller.left_trigger() >> 3)
+            robot['rev'] = int(controller.right_trigger() >> 3)
 
-            # The left and right analog trigger-------------
-            # message = "{} {}".format(controller.left_trigger(), controller.right_trigger())
+    #        if controller.x() == 1:
+    #            message = 0b0010
+    #        elif controller.y() == 1:
+    #            message = 0b0001
+    #        elif controller.a() == 1:
+    #            message = 0b1000
+    #        elif controller.b() == 1:
+    #            message = 0b0100
+    #        else:
+    #            left_t = int(controller.left_trigger() >> 3)
+    #            right_t = int(controller.right_trigger() >> 3)
+    #            if right_t > 0:
+    #                message = right_t  # Forward (positive value)
+    #            elif left_t > 0:
+    #                message = -left_t  # Reverse (hence the negative)
 
-            # The left and right bumpers
-            # message = "{} {}".format(controller.left_bumper(), controller.right_bumper())
-            if(message):
-            #    message = pickle.dumps(message)
-                await websocket.send(str(message))
-            # else:
-            #     await websocket.send("false")
+            if(robot):
+                await websocket.send(pickle.dumps(robot))
+
             with suppress(asyncio.TimeoutError):
                 global counter
                 response = await asyncio.wait_for(websocket.recv(), 1)
-                if response == "False False False False":
-                    response = "NOP"
-                    counter += 1
-                else:
-                    counter = 0
-                if counter <= 1:
-                    print(response)
+                print(pickle.load(response))
     finally:
 
         await websocket.close()
