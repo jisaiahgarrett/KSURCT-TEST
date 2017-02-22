@@ -1,5 +1,6 @@
 import asyncio
 import websockets
+import pickle
 import RPi.GPIO as GPIO
 
 from logging import Logger
@@ -11,17 +12,16 @@ port = 8055
 logger = Logger(__name__)
 
 # Initialize the servos with default I2C address (0x40)
-shoulder1 = Adafruit_PCA9685.PCA9685()
+shoulder1 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder1.set_pwm_freq(60)
 shoulder1_alt = 300  # FIGURE OUT WHY THE SHOULDER SERVO IS CHANGING CONSTANTLY!
-shoulder2 = Adafruit_PCA9685.PCA9685()
-#shoulder2.set_pwm_freq(60)
+shoulder2 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder2_alt = 492
 
-leftMotor = Adafruit_PCA9685.PCA9685()
-#leftMotor.set_pwm_freq(1600)
-rightMotor = Adafruit_PCA9685.PCA9685()
-#rightMotor.set_pwm_freq(1600)
+leftMotor = Adafruit_PCA9685.PCA9685(0x41)
+leftMotor.set_pwm_freq(1600)
+rightMotor = Adafruit_PCA9685.PCA9685(0x41)
+
 
 # Servo channel information
 SHOULDER1_CHA = 0
@@ -57,7 +57,9 @@ class CLserver(object):
     async def handle_msg(self, msg):
         logger.debug('new message handled')
         global shoulder2_alt
+#        msg = pickle.loads(msg)
         if msg == "2":  # Left - X
+            print(msg)
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt << 1)
         elif msg == "1":  # Up - Y
             if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
@@ -70,6 +72,7 @@ class CLserver(object):
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         elif msg == "4":  # Right - B
+            print(msg)
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
         else:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
@@ -90,8 +93,8 @@ class CLserver(object):
                 rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
                 GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
                 GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-        # print(msg)  # debugging purposes (seeing the value change)
-        await self.send(str(msg))
+        #print(msg)  # debugging purposes (seeing the value change)
+        await self.send(msg)
 
     async def send(self, msg):
         logger.debug('sending new message')
