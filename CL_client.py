@@ -18,8 +18,12 @@ async def SendMessage():
             robot['y'] = 1 if controller.y() else 0
             robot['a'] = 1 if controller.a() else 0
             robot['b'] = 1 if controller.b() else 0
-            robot['fwd'] =  int(controller.left_trigger() >> 3)
+            robot['fwd'] =  int(controller.left_trigger() >> 3)  # To implement turning, we will want to grab the left stick and adjust Fwd/Rev appropriately.
             robot['rev'] = int(controller.right_trigger() >> 3)
+
+            # If leftStick.X < 0 then we want to trim off the left motor to turn left.
+            # If leftStick.X > 0 then we want to trim off the right motor to turn right.
+
 
     #        if controller.x() == 1:
     #            message = 0b0010
