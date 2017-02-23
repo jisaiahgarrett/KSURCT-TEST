@@ -57,44 +57,52 @@ class CLserver(object):
     async def handle_msg(self, msg):
         logger.debug('new message handled')
         global shoulder2_alt
-#        msg = pickle.loads(msg)
-        if msg == "2":  # Left - X
-            print(msg)
+        msg = pickle.loads(msg)
+        if msg['x'] == 1:  # Left - X
+           # print("Servo left")
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt << 1)
-        elif msg == "1":  # Up - Y
+        else:
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
+        if msg['y'] == 1:  # Up - Y
+           # print("Servo up")
             if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                 shoulder2_alt = 599
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt += 1 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
-        elif msg == "8":  # Down - A
+        else:
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, 0)
+        if msg['a'] == 1:  # Down - A
+           # print("Servo down")
             if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
                 shoulder2_alt = 300
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
             shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
-        elif msg == "4":  # Right - B
-            print(msg)
+        else:
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, 0)
+        if msg['b'] == 1:  # Right - B
+           # print("Servo right")
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
         else:
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)  # Restore the servo to a safe value if not doing anything (was 392)
-            if msg != "False False False False":  # If the input is an actual state change
-               msg = int(msg)  # Convert the message string into an actual PWM value that the motor can use
-               if msg < 0:
-                    GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
-                    GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-                    msg = -msg
-               else:
-                    GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
-                    GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-
-               leftMotor.set_pwm(LEFTM_CHA, 0, msg)
-               rightMotor.set_pwm(RIGHTM_CHA, 0, msg)
-            else:
-                leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-                rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
-                GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-                GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-        #print(msg)  # debugging purposes (seeing the value change)
-        await self.send(msg)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
+        if msg['rev'] >= 0:
+         #   print("Rev")
+            GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+            GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+            leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
+            rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
+        elif msg['fwd'] >= 0:
+         #   print("Fwd")
+            GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
+            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+            leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
+            rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
+        else:
+         #   print("Default")
+            leftMotor.set_pwm(LEFTM_CHA, 0, 0)
+            rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
+            GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+        await self.send(pickle.dumps(msg))
 
     async def send(self, msg):
         logger.debug('sending new message')
