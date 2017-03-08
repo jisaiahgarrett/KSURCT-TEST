@@ -6,7 +6,6 @@ import pickle
 
 Controller.init()
 controller = Controller(0)
-counter = 0
 
 async def SendMessage():
     websocket = await websockets.connect('ws://10.243.193.47:8055/')  # zerotier IP of server
@@ -46,9 +45,8 @@ async def SendMessage():
                 await websocket.send(pickle.dumps(robot))
 
             with suppress(asyncio.TimeoutError):
-                global counter
                 response = await asyncio.wait_for(websocket.recv(), 1)
-                print(pickle.loads(response))
+               # print(pickle.loads(response))
     finally:
 
         await websocket.close()
