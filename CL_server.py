@@ -14,7 +14,7 @@ logger = Logger(__name__)
 # Initialize the servos with default I2C address (0x40)
 shoulder1 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder1.set_pwm_freq(60)
-shoulder1_alt = 300  # FIGURE OUT WHY THE SHOULDER SERVO IS CHANGING CONSTANTLY!
+shoulder1_alt = 300
 shoulder2 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder2_alt = 492
 
@@ -33,6 +33,7 @@ RIGHTM_CHA = 15
 GPIO.setmode(GPIO.BCM)
 GPIO_FWD_PIN = 18
 GPIO_REV_PIN = 17
+GPIO.setwarnings(False)
 GPIO.setup(GPIO_FWD_PIN, GPIO.OUT)
 GPIO.setup(GPIO_REV_PIN, GPIO.OUT)
 
@@ -61,7 +62,7 @@ class CLserver(object):
         if msg['x'] == 1:  # Left - X
            # print("Servo left")
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt << 1)
-        else:
+        elif msg['b'] == 0:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['y'] == 1:  # Up - Y
            # print("Servo up")
@@ -82,7 +83,7 @@ class CLserver(object):
         if msg['b'] == 1:  # Right - B
            # print("Servo right")
             shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
-        else:
+        elif msg['x'] == 0:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['rev'] >= 0:
          #   print("Rev")
