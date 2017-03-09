@@ -86,15 +86,15 @@ class CLserver(object):
         elif msg['x'] == 0:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['rev'] >= 0:
-         #   print("Rev")
-            GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+           # print("Reverse")
+            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
             GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
             leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
             rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
         elif msg['fwd'] >= 0:
-         #   print("Fwd")
+           # print("Forward")
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
-            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+            GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
             leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
             rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
         else:
