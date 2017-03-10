@@ -103,20 +103,31 @@ class CLserver(object):
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
             GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
             if msg['lstick'] > 0:
-               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 3))
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
             elif msg['lstick'] < 0:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
-               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 3))
+               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 4))
             else:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
                rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
         else:
          #   print("Default")
-            leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-            rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
-            GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+            GPIO.output(GPIO_FWD_PIN, GPIO.HIGH) # right
+            GPIO.output(GPIO_REV_PIN, GPIO.HIGH) # left
+            if msg['lstick'] > 0:
+               GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+               leftMotor.set_pwm(LEFTM_CHA, 0, (4096*msg['lstick']) >> 4)
+               rightMotor.set_pwm(RIGHTM_CHA, 0, (4096*msg['lstick']) >> 4)
+            elif msg['lstick'] < 0:
+               GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+               leftMotor.set_pwm(LEFTM_CHA, 0, -(4096*msg['lstick']) >> 4)
+               rightMotor.set_pwm(RIGHTM_CHA, 0, -(4096*msg['lstick']) >> 4)
+            else:
+               leftMotor.set_pwm(LEFTM_CHA, 0, 0)
+               rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
+               GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+               GPIO.output(GPIO_REV_PIN, GPIO.LOW)
         await self.send(pickle.dumps(msg))
 
     async def send(self, msg):
