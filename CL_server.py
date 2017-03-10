@@ -89,14 +89,28 @@ class CLserver(object):
            # print("Reverse")
             GPIO.output(GPIO_REV_PIN, GPIO.LOW)
             GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-            leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
-            rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
+            if msg['lstick'] < 0:
+                leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
+                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
+            elif msg['lstick'] > 0:
+                leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'] - (msg['rev']*msg['lstick'] >> 4))
+                rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
+            else:
+                leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
+                rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
         elif msg['fwd'] >= 0:
            # print("Forward")
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
             GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
-            leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
-            rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
+            if msg['lstick'] > 0:
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 3))
+               rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
+            elif msg['lstick'] < 0:
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
+               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 3))
+            else:
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
+               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
         else:
          #   print("Default")
             leftMotor.set_pwm(LEFTM_CHA, 0, 0)
