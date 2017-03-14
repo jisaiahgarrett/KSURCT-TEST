@@ -58,10 +58,12 @@ class CLserver(object):
     async def handle_msg(self, msg):
         logger.debug('new message handled')
         global shoulder2_alt
+        global shoulder1_alt
         msg = pickle.loads(msg)
         if msg['x'] == 1:  # Left - X
-           # print("Servo left")
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt << 1)
+           # print(shoulder1_alt)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
+            shoulder1_alt += 5
         elif msg['b'] == 0:
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['y'] == 1:  # Up - Y
@@ -69,21 +71,23 @@ class CLserver(object):
             if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                 shoulder2_alt = 599
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-            shoulder2_alt += 1 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
+            shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
         else:
-            shoulder2.set_pwm(SHOULDER2_CHA, 0, 0)
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
         if msg['a'] == 1:  # Down - A
            # print("Servo down")
             if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
                 shoulder2_alt = 300
             shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-            shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
+            shoulder2_alt -= 5  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
         else:
-            shoulder2.set_pwm(SHOULDER2_CHA, 0, 0)
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
         if msg['b'] == 1:  # Right - B
-           # print("Servo right")
-            shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
+           # print(shoulder1_alt)
+            shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
+            shoulder1_alt -= 5
         elif msg['x'] == 0:
+            shoulder1_alt = 380
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['rev'] >= 0:
            # print("Reverse")
