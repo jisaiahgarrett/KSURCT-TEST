@@ -17,17 +17,31 @@ shoulder1.set_pwm_freq(60)
 shoulder1_alt = 300
 shoulder2 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder2_alt = 492
+wrist = Adafruit_PCA9685.PCA9685(0x40)
+fingers = Adafruit_PCA9685.PCA9685(0x40)
+elbow = Adafruit_PCA9685.PCA9685(0x40)
+# TODO: REDUCE ALL SERVO OBJECTS TO A SINGLE SERVO OBJECT AND USE CHANNELS TO DIFFERENTIATE
 
+# Initialize the motors with I2C address (0x41)
 leftMotor = Adafruit_PCA9685.PCA9685(0x41)
 leftMotor.set_pwm_freq(1600)
 rightMotor = Adafruit_PCA9685.PCA9685(0x41)
 
-
 # Servo channel information
 SHOULDER1_CHA = 0
 SHOULDER2_CHA = 1
+EYES_CHA = 2
+WRIST_CHA = 3
+FINGERS_CHA = 4
+ELBOW_CHA = 5
 LEFTM_CHA = 14
 RIGHTM_CHA = 15
+
+#Initialize servos to the Vision preset
+shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+elbow.set_pwm(ELBOW_CHA, 0, 300)
+wrist.set_pwm(WRIST_CHA, 0, 400)
+fingers.set_pwm(FINGERS_CHA, 0, 200)
 
 # Set up the GPIO pin for toggling reverse/forward motors.
 GPIO.setmode(GPIO.BCM)
@@ -91,8 +105,8 @@ class CLserver(object):
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
         if msg['rev'] >= 0:
            # print("Reverse")
-            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-            GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+            GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+            GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
             if msg['lstick'] < 0:
                 leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
                 rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
@@ -104,8 +118,8 @@ class CLserver(object):
                 rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
         elif msg['fwd'] >= 0:
            # print("Forward")
-            GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
-            GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+            GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+            GPIO.output(GPIO_REV_PIN, GPIO.LOW)
             if msg['lstick'] > 0:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
@@ -115,6 +129,15 @@ class CLserver(object):
             else:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
                rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
+#        if msg['vision'] == 1:
+#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+#            elbow.set_pwm(ELBOW_CHA, 0, 300)
+#            wrist.set_pwm(WRIST_CHA, 0, 400)
+#            fingers.set_pwm(FINGERS_CHA, 0, 200)
+#        elif msg['peek'] == 1:
+#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
+#            elbow.set_pwm(ELBOW_CHA, 0, 400)
+#            wrist.set_pwm(WRIST_CHA, 0, 500)
         else:
          #   print("Default")
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH) # right
