@@ -6,6 +6,7 @@ import pickle
 
 Controller.init()
 controller = Controller(0)
+oldRobot = {}
 
 async def SendMessage():
     websocket = await websockets.connect('ws://10.243.193.47:8055/')  # zerotier IP of server
@@ -41,10 +42,10 @@ async def SendMessage():
     #            elif left_t > 0:
     #                message = -left_t  # Reverse (hence the negative)
 
-            if(robot):
+            if(robot != oldRobot):
                 print(robot)
                 await websocket.send(pickle.dumps(robot))
-
+		oldRobot = robot
             with suppress(asyncio.TimeoutError):
                 response = await asyncio.wait_for(websocket.recv(), 1)
                # print(pickle.loads(response))
