@@ -14,7 +14,9 @@ class AbstractState(object):
         pass
 
     def __str__(self):
-        return '<State {}>'.format(self.value())
+        value = '{}'.format(self.value())
+        self.clear()
+        return value
 
     def __repr__(self):
         return str(self)
@@ -205,7 +207,7 @@ class Controller(object):
         self.right_y = DecimalAxisState()
         self.right_trigger = CurrentButtonState()  # Changed from PullTrigger
 
-        self.hat = HatSwitchesState()
+        self.hat = HatState()
 
         self.zero()
 
