@@ -103,15 +103,24 @@ class CLserver(object):
         elif msg['x'] == 0:
             shoulder1_alt = 380
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
+        if msg['vision'] == 1:  
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+            wrist.set_pwm(WRIST_CHA, 0, 400)
+            elbow.set_pwm(ELBOW_CHA, 0, 300)
+            fingers.set_pwm(FINGERS_CHA, 0, 200)
+        elif msg['peek'] == 1:
+            shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
+            elbow.set_pwm(ELBOW_CHA, 0, 400)
+            wrist.set_pwm(WRIST_CHA, 0, 500)
         if msg['rev'] >= 0:
            # print("Reverse")
             GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
-            if msg['lstick'] < 0:
+            if msg['lstick'] > 0:
                 leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
-                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
-            elif msg['lstick'] > 0:
-                leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'] - (msg['rev']*msg['lstick'] >> 4))
+                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] - (msg['rev']*msg['lstick'] >> 4))
+            elif msg['lstick'] < 0:
+                leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
                 rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
             else:
                 leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
@@ -120,36 +129,27 @@ class CLserver(object):
            # print("Forward")
             GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
             GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-            if msg['lstick'] > 0:
-               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
+            if msg['lstick'] < 0:
+               leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 4))
                rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
-            elif msg['lstick'] < 0:
+            elif msg['lstick'] > 0:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
-               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 4))
+               rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
             else:
                leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
                rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
-#        if msg['vision'] == 1:
-#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
-#            elbow.set_pwm(ELBOW_CHA, 0, 300)
-#            wrist.set_pwm(WRIST_CHA, 0, 400)
-#            fingers.set_pwm(FINGERS_CHA, 0, 200)
-#        elif msg['peek'] == 1:
-#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
-#            elbow.set_pwm(ELBOW_CHA, 0, 400)
-#            wrist.set_pwm(WRIST_CHA, 0, 500)
         else:
          #   print("Default")
             GPIO.output(GPIO_FWD_PIN, GPIO.HIGH) # right
             GPIO.output(GPIO_REV_PIN, GPIO.HIGH) # left
-            if msg['lstick'] > 0:
+            if msg['lstick'] < 0:
                GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-               leftMotor.set_pwm(LEFTM_CHA, 0, (4096*msg['lstick']) >> 4)
-               rightMotor.set_pwm(RIGHTM_CHA, 0, (4096*msg['lstick']) >> 4)
-            elif msg['lstick'] < 0:
-               GPIO.output(GPIO_REV_PIN, GPIO.LOW)
                leftMotor.set_pwm(LEFTM_CHA, 0, -(4096*msg['lstick']) >> 4)
                rightMotor.set_pwm(RIGHTM_CHA, 0, -(4096*msg['lstick']) >> 4)
+            elif msg['lstick'] > 0:
+               GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+               leftMotor.set_pwm(LEFTM_CHA, 0, (4096*msg['lstick']) >> 4)
+               rightMotor.set_pwm(RIGHTM_CHA, 0, (4096*msg['lstick']) >> 4)
             else:
                leftMotor.set_pwm(LEFTM_CHA, 0, 0)
                rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
