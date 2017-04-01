@@ -112,6 +112,10 @@ class CLserver(object):
             shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
             elbow.set_pwm(ELBOW_CHA, 0, 400)
             wrist.set_pwm(WRIST_CHA, 0, 500)
+        if msg['rstick'] > 0:  # Open the fingers
+            fingers.set_pwm(FINGERS_CHA, 0, msg['rstick'] << 6)
+        else:
+            fingers.set_pwm(FINGERS_CHA, 0, 200)
         if msg['rev'] >= 0:
            # print("Reverse")
             GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
