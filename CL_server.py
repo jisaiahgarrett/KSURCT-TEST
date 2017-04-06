@@ -103,15 +103,15 @@ class CLserver(object):
         elif msg['x'] == 0:
             shoulder1_alt = 380
             shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-        if msg['vision'] == 1:  
-            shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
-            wrist.set_pwm(WRIST_CHA, 0, 400)
-            elbow.set_pwm(ELBOW_CHA, 0, 300)
-            fingers.set_pwm(FINGERS_CHA, 0, 200)
-        elif msg['peek'] == 1:
-            shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
-            elbow.set_pwm(ELBOW_CHA, 0, 400)
-            wrist.set_pwm(WRIST_CHA, 0, 500)
+#        if msg['vision'] == 1:  
+#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+#            wrist.set_pwm(WRIST_CHA, 0, 400)
+#            elbow.set_pwm(ELBOW_CHA, 0, 300)
+#            fingers.set_pwm(FINGERS_CHA, 0, 200)
+#        elif msg['peek'] == 1:
+#            shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
+#            elbow.set_pwm(ELBOW_CHA, 0, 400)
+#            wrist.set_pwm(WRIST_CHA, 0, 500)
         if msg['rstick'] > 0:  # Open the fingers
             fingers.set_pwm(FINGERS_CHA, 0, msg['rstick'] << 6)
         else:
