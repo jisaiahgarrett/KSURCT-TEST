@@ -64,12 +64,22 @@ class CLserver(object):
     async def handle_new_connection(self, ws, path):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
-        with suppress(websockets.ConnectionClosed):
-            while True:
-                result = await ws.recv()
-                await self.handle_msg(result)
-        self._active_connections.remove(ws)
+        try:
+            with suppress(websockets.ConnectionClosed):
+                while True:
+                    result = await ws.recv()
+                    await self.handle_msg(result)
+            self._active_connections.remove(ws)
+        except Exception as e:
+            shoulder2.set_all_pwm(0, 0)
+            leftMotor.set_all_pwm(0, 0)
+            sys.exit()
 
+    async def send(self, msg):
+        logger.debug('sending new message')
+        for ws in self._active_connections:
+            asyncio.ensure_future(ws.send(msg))
+  
     async def handle_msg(self, msg):
         try:
             logger.debug('new message handled')
@@ -163,17 +173,15 @@ class CLserver(object):
                    GPIO.output(GPIO_REV_PIN, GPIO.LOW)
             await self.send(pickle.dumps(msg))
         except:
-            shoulder2.set_all_pwm(0, 0, 0)
+            shoulder2.set_all_pwm(0, 0)
+            leftMotor.set_all_pwm(0, 0)
             sys.exit()
 
-        async def send(self, msg):
-            logger.debug('sending new message')
-            for ws in self._active_connections:
-                asyncio.ensure_future(ws.send(msg))
-
-server = CLserver(port)
-
-
-asyncio.get_event_loop().run_until_complete(server.start_server())
-
-asyncio.get_event_loop().run_forever()
+try:
+    server = CLserver(port)
+    asyncio.get_event_loop().run_until_complete(server.start_server())
+    asyncio.get_event_loop().run_forever()
+except:
+    shoulder2.set_all_pwm(0, 0)
+    leftMotor.set_all_pwm(0, 0)
+    sys.exit()
