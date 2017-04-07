@@ -86,13 +86,13 @@ class CLserver(object):
             global shoulder2_alt
             global shoulder1_alt
             msg = pickle.loads(msg)
-            if msg['x'] == 1:  # Left - X
+            if msg['x'] and not msg['lbump']:  # Left - X
                # print(shoulder1_alt)
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
                 shoulder1_alt += 5
-            elif msg['b'] == 0:
+            elif not msg['b'] and not msg['lbump']:
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-            if msg['y'] == 1:  # Up - Y
+            if msg['y'] and not msg['lbump']:  # Up - Y
                # print("Servo up")
                 if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                     shoulder2_alt = 599
@@ -100,7 +100,7 @@ class CLserver(object):
                 shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
             else:
                 shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-            if msg['a'] == 1:  # Down - A
+            if msg['a'] and not msg['lbump']:  # Down - A
                # print("Servo down")
                 if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
                     shoulder2_alt = 300
@@ -108,11 +108,11 @@ class CLserver(object):
                 shoulder2_alt -= 5  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
             else:
                 shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-            if msg['b'] == 1:  # Right - B
+            if msg['b'] and not msg['lbump']:  # Right - B
                # print(shoulder1_alt)
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
                 shoulder1_alt -= 5
-            elif msg['x'] == 0:
+            elif not msg['x']:
                 shoulder1_alt = 380
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
     #        if msg['vision'] == 1:
@@ -128,6 +128,10 @@ class CLserver(object):
                 fingers.set_pwm(FINGERS_CHA, 0, msg['rstick'] << 6)
             else:
                 fingers.set_pwm(FINGERS_CHA, 0, 200)
+            if msg['lbump'] and msg['x']:
+                print("lbump + x")
+            if msg['lbump'] and msg['b']:
+                print("lbump + b")
             if msg['rev'] >= 0:
                # print("Reverse")
                 GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
