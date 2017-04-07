@@ -27,7 +27,7 @@ async def SendMessage():
             robot['vision'] = 1 if str(controller.hat).strip() == 'd' else 0
             robot['peek'] = 1 if str(controller.hat).strip() == 'u' else 0
             robot['rstick'] = int(-10*r_stick) if abs(r_stick) > 0.1 else 0
-
+            robot['lbump'] = 1 if controller.left_bumper() else 0
             # If leftStick.X < 0 then we want to trim off the left motor to turn left.
             # If leftStick.X > 0 then we want to trim off the right motor to turn right.
 
