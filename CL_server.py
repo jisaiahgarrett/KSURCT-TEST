@@ -21,7 +21,6 @@ shoulder2_alt = 492
 wrist = Adafruit_PCA9685.PCA9685(0x40)
 fingers = Adafruit_PCA9685.PCA9685(0x40)
 elbow = Adafruit_PCA9685.PCA9685(0x40)
-# TODO: REDUCE ALL SERVO OBJECTS TO A SINGLE SERVO OBJECT AND USE CHANNELS TO DIFFERENTIATE
 
 # Initialize the motors with I2C address (0x41)
 leftMotor = Adafruit_PCA9685.PCA9685(0x41)
@@ -79,28 +78,40 @@ class CLserver(object):
         logger.debug('sending new message')
         for ws in self._active_connections:
             asyncio.ensure_future(ws.send(msg))
-  
+
     async def handle_msg(self, msg):
         try:
             logger.debug('new message handled')
             global shoulder2_alt
             global shoulder1_alt
             msg = pickle.loads(msg)
-            if msg['x'] and not msg['lbump']:  # Left - X
+            if msg['lbx']:
+                print("lbump + x")
+            elif msg['x']:  # Left - X
                # print(shoulder1_alt)
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
                 shoulder1_alt += 5
-            elif not msg['b'] and not msg['lbump']:
+            if msg['lbb']:
+                print("lbump + b")
+            elif msg['b']:
                 shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-            if msg['y'] and not msg['lbump']:  # Up - Y
+            if msg['lby']:
+                print("lbump + y")
+            elif msg['rby']:
+                print("rbump + y")
+            elif msg['y']:  # Up - Y
                # print("Servo up")
                 if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
                     shoulder2_alt = 599
                 shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
                 shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
-            else:
+            else:  # potential problem with conditional, test this (intent, elif/else matching)
                 shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-            if msg['a'] and not msg['lbump']:  # Down - A
+            if msg['lba']:
+                print("lbump + a")
+            elif msg['rba']:
+                print("rbump + a")
+            elif msg['a']:  # Down - A
                # print("Servo down")
                 if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
                     shoulder2_alt = 300
@@ -128,10 +139,6 @@ class CLserver(object):
                 fingers.set_pwm(FINGERS_CHA, 0, msg['rstick'] << 6)
             else:
                 fingers.set_pwm(FINGERS_CHA, 0, 200)
-            if msg['lbump'] and msg['x']:
-                print("lbump + x")
-            if msg['lbump'] and msg['b']:
-                print("lbump + b")
             if msg['rev'] >= 0:
                # print("Reverse")
                 GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
@@ -180,6 +187,7 @@ class CLserver(object):
             shoulder2.set_all_pwm(0, 0)
             leftMotor.set_all_pwm(0, 0)
             sys.exit()
+
 
 try:
     server = CLserver(port)
