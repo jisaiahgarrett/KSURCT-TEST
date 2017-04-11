@@ -3,6 +3,7 @@ import asyncio
 from contextlib import suppress
 from xbox import Controller
 import pickle
+import sys
 
 Controller.init()
 controller = Controller(0)
@@ -17,6 +18,7 @@ async def SendMessage():
             l_stick = round(controller.left_x(), 1)
             r_stick = round(controller.right_y(), 1)
             robot = {}
+            oldRobot = {}
             robot['x'] = 1 if controller.x() else 0
             robot['y'] = 1 if controller.y() else 0
             robot['a'] = 1 if controller.a() else 0
@@ -38,7 +40,7 @@ async def SendMessage():
             robot['rba'] = 1 if controller.right_bumper() and controller.a() else 0
             # If leftStick.X < 0 then we want to trim off the left motor to turn left.
             # If leftStick.X > 0 then we want to trim off the right motor to turn right.
-
+            robot['valid'] = 1  # Was testing not spamming controller but that is impossible.
 
     #        if controller.x() == 1:
     #            message = 0b0010
@@ -56,11 +58,13 @@ async def SendMessage():
     #            elif left_t > 0:
     #                message = -left_t  # Reverse (hence the negative)
 
-            if(robot != oldRobot):
+            if(robot):
                 print(robot)
                 await websocket.send(pickle.dumps(robot))
+                oldRobot = robot
             with suppress(asyncio.TimeoutError):
                 response = await asyncio.wait_for(websocket.recv(), 1)
+
     finally:
 
         await websocket.close()
