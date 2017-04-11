@@ -63,16 +63,22 @@ class CLserver(object):
     async def handle_new_connection(self, ws, path):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
-        try:
-            with suppress(websockets.ConnectionClosed):
-                while True:
-                    result = await ws.recv()
-                    await self.handle_msg(result)
-            self._active_connections.remove(ws)
-        except Exception as e:
-            shoulder2.set_all_pwm(0, 0)
-            leftMotor.set_all_pwm(0, 0)
-            sys.exit()
+        while True:
+            try:
+                result = await ws.recv()
+            except Exception as e:
+                shoulder2.set_all_pwm(0, 0)
+                leftMotor.set_all_pwm(0, 0)
+                sys.exit()
+            if result is None:
+                logger.debug('connection closed.')
+                self._active_connections.remove(ws)
+                shoulder2.set_all_pwm(0, 0)
+                leftMotor.set_all_pwm(0, 0)
+                sys.exit()
+                return
+            await self.handle_msg(result)
+        self._active_connections.remove(ws)
 
     async def send(self, msg):
         logger.debug('sending new message')
