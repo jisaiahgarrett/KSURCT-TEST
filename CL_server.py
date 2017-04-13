@@ -66,7 +66,12 @@ class CLserver(object):
         self._active_connections.add(ws)
         with suppress(websockets.ConnectionClosed):
             while True:
-                result = await ws.recv()
+                try:
+                    result = await ws.recv()
+                except:
+                    shoulder2.set_all_pwm(0, 0)
+                    leftMotor.set_all_pwm(0, 0)
+                    return
                 if result is None:
                     logger.debug('connection closed.')
                     self._active_connections.remove(ws)
