@@ -4,6 +4,7 @@ import pickle
 import RPi.GPIO as GPIO
 import sys
 
+from urllib.request import urlopen
 from logging import Logger
 from contextlib import suppress
 
@@ -55,33 +56,48 @@ class CLserver(object):
     def __init__(self, port):
         self._active_connections = set()
         self.port = port
-        self.count = 0
+        self.counter = 0
+        self.online = True
 
     async def start_server(self):
         logger.info('server starting up')
-        self.server = await websockets.serve(self.handle_new_connection, '0.0.0.0', self.port)
+        self.server = await websockets.serve(self.handle_new_connection, '0.0.0.0', self.port, timeout=1)
 
     async def handle_new_connection(self, ws, path):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
-        with suppress(websockets.ConnectionClosed):
-            while True:
-                try:
-                    result = await ws.recv()
-                except:
-                    shoulder2.set_all_pwm(0, 0)
-                    leftMotor.set_all_pwm(0, 0)
-                    return
-                if result is None:
-                    logger.debug('connection closed.')
-                    self._active_connections.remove(ws)
-                await self.handle_msg(result)
+        while True:
+            try:
+                if self.counter > 100:
+                    self.online = await self.test_connection()
+                    self.counter = 0                    
+                else:
+                    if self.online:
+                        result = await ws.recv()
+                        self.counter += 10
+                    else:
+                        self.counter = 0
+                        leftMotor.set_all_pwm(0, 0)
+                        return
+            except:
+                print('reset')
+                shoulder2.set_all_pwm(0, 0)
+                leftMotor.set_all_pwm(0, 0)
+                return
+            await self.handle_msg(result)
         self._active_connections.remove(ws)
 
-    async def send(self, msg):  # Gets stuck here...
+    async def send(self, msg):  
         logger.debug('sending new message')
         for ws in self._active_connections:
-           asyncio.ensure_future(ws.send(msg))
+            asyncio.ensure_future(ws.send(msg))
+           
+    async def test_connection(self):
+        try:
+            urlopen('http://216.58.192.142',timeout=0.5)
+            return True
+        except:
+            return False
 
     async def handle_msg(self, msg):
         try:
@@ -89,6 +105,9 @@ class CLserver(object):
             global shoulder2_alt
             global shoulder1_alt
             msg = pickle.loads(msg)
+            if msg == "1":
+                print('Yay')
+                return
             if msg['lbx']:
                 print("lbump + x")
             elif msg['x']:  # Left - X
