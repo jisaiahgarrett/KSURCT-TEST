@@ -3,7 +3,6 @@ import websockets
 import pickle
 import RPi.GPIO as GPIO
 import sys
-from urllib.request import urlopen
 
 from logging import Logger
 from contextlib import suppress
@@ -56,35 +55,21 @@ class CLserver(object):
     def __init__(self, port):
         self._active_connections = set()
         self.port = port
-        self.heartbeat = 0
-        self.oldheartbeat = 0
+        self.count = 0
 
     async def start_server(self):
         logger.info('server starting up')
-        self.server = await websockets.serve(self.handle_new_connection, '0.0.0.0', self.port, timeout=1)
+        self.server = await websockets.serve(self.handle_new_connection, '0.0.0.0', self.port)
 
     async def handle_new_connection(self, ws, path):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
         with suppress(websockets.ConnectionClosed):
             while True:
-                try:
-                    result = await ws.recv()
-                except Exception as e:
-                  #  print(e)
-                    shoulder2.set_all_pwm(0, 0)
-                    leftMotor.set_all_pwm(0, 0)
-                    return
+                result = await ws.recv()
                 if result is None:
                     logger.debug('connection closed.')
-                    try:
-                        self._active_connections.remove(ws)
-                    except:
-                        continue
-                    finally:
-                        shoulder2.set_all_pwm(0, 0)
-                        leftMotor.set_all_pwm(0, 0)
-                        return
+                    self._active_connections.remove(ws)
                 await self.handle_msg(result)
         self._active_connections.remove(ws)
 
@@ -92,8 +77,6 @@ class CLserver(object):
         logger.debug('sending new message')
         for ws in self._active_connections:
            asyncio.ensure_future(ws.send(msg))
-    #    shoulder2.set_all_pwm(0, 0)
-    #    leftMotor.set_all_pwm(0, 0)
 
     async def handle_msg(self, msg):
         try:
@@ -101,106 +84,102 @@ class CLserver(object):
             global shoulder2_alt
             global shoulder1_alt
             msg = pickle.loads(msg)
-            if msg['valid']:
-                if msg['lbx']:
-                    print("lbump + x")
-                elif msg['x']:  # Left - X
-                   # print(shoulder1_alt)
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
-                    shoulder1_alt += 5
-                if msg['lbb']:
-                    print("lbump + b")
-                elif msg['b']:
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-                if msg['lby']:
-                    print("lbump + y")
-                elif msg['rby']:
-                    print("rbump + y")
-                elif msg['y']:  # Up - Y
-                   # print("Servo up")
-                    if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
-                        shoulder2_alt = 599
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                    shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
+            if msg['lbx']:
+                print("lbump + x")
+            elif msg['x']:  # Left - X
+               # print(shoulder1_alt)
+                shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
+                shoulder1_alt += 5
+            if msg['lbb']:
+                print("lbump + b")
+            elif msg['b']:
+                shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
+                shoulder1_alt -= 5
+            else:
+                shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
+                shoulder1_alt = 300
+            if msg['lby']:
+                print("lbump + y")
+            elif msg['rby']:
+                print("rbump + y")
+            elif msg['y']:  # Up - Y
+               # print("Servo up")
+                if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
+                    shoulder2_alt = 599
+                shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
+                shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
+            else:
+                shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
+            if msg['lba']:
+                print("lbump + a")
+            elif msg['rba']:
+                print("rbump + a")
+            elif msg['a']:  # Down - A
+               # print("Servo down")
+                if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
+                    shoulder2_alt = 300
+                shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
+                shoulder2_alt -= 5  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
+            else:
+                shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
+#             if msg['vision'] == 1:
+#                shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+#                wrist.set_pwm(WRIST_CHA, 0, 400)
+#                elbow.set_pwm(ELBOW_CHA, 0, 300)
+#                fingers.set_pwm(FINGERS_CHA, 0, 200)
+#             elif msg['peek'] == 1:
+#                shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
+#                elbow.set_pwm(ELBOW_CHA, 0, 400)
+#                wrist.set_pwm(WRIST_CHA, 0, 500)
+            if msg['rstick'] > 0:  # Open the fingers
+                fingers.set_pwm(FINGERS_CHA, 0, 530) #msg['rstick'] << 6)
+            else:
+                fingers.set_pwm(FINGERS_CHA, 0, 300) #200)
+            if msg['rev'] >= 0:
+                # print("Reverse")
+                GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
+                GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
+                if msg['lstick'] > 0:
+                    leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
+                    rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] - (msg['rev']*msg['lstick'] >> 4))
+                elif msg['lstick'] < 0:
+                    leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
+                    rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
                 else:
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                if msg['lba']:
-                    print("lbump + a")
-                elif msg['rba']:
-                    print("rbump + a")
-                elif msg['a']:  # Down - A
-                   # print("Servo down")
-                    if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
-                        shoulder2_alt = 300
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                    shoulder2_alt -= 5  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
+                    leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
+                    rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
+            elif msg['fwd'] >= 0:
+               # print("Forward")
+                GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+                GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+                if msg['lstick'] < 0:
+                    leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 4))
+                    rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
+                elif msg['lstick'] > 0:
+                   leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
+                   rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
                 else:
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                if msg['b'] and not msg['lbump']:  # Right - B
-                   # print(shoulder1_alt)
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
-                    shoulder1_alt -= 5
-                elif not msg['x']:
-                    shoulder1_alt = 380
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-    #             if msg['vision'] == 1:
-    #                shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
-    #                wrist.set_pwm(WRIST_CHA, 0, 400)
-    #                elbow.set_pwm(ELBOW_CHA, 0, 300)
-    #                fingers.set_pwm(FINGERS_CHA, 0, 200)
-    #             elif msg['peek'] == 1:
-    #                shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
-    #                elbow.set_pwm(ELBOW_CHA, 0, 400)
-    #                wrist.set_pwm(WRIST_CHA, 0, 500)
-                if msg['rstick'] > 0:  # Open the fingers
-                    fingers.set_pwm(FINGERS_CHA, 0, 530) #msg['rstick'] << 6)
+                   leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
+                   rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
+            else:
+             #   print("Default")
+                GPIO.output(GPIO_FWD_PIN, GPIO.HIGH) # right
+                GPIO.output(GPIO_REV_PIN, GPIO.HIGH) # left
+                if msg['lstick'] < 0:
+                   GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+                   leftMotor.set_pwm(LEFTM_CHA, 0, -(4096*msg['lstick']) >> 4)
+                   rightMotor.set_pwm(RIGHTM_CHA, 0, -(4096*msg['lstick']) >> 4)
+                elif msg['lstick'] > 0:
+                   GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+                   leftMotor.set_pwm(LEFTM_CHA, 0, (4096*msg['lstick']) >> 4)
+                   rightMotor.set_pwm(RIGHTM_CHA, 0, (4096*msg['lstick']) >> 4)
                 else:
-                    fingers.set_pwm(FINGERS_CHA, 0, 300) #200)
-                if msg['rev'] >= 0:
-                   # print("Reverse")
-                    GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
-                    GPIO.output(GPIO_FWD_PIN, GPIO.HIGH)
-                    if msg['lstick'] > 0:
-                       leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
-                       rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['rev'] - (msg['rev']*msg['lstick'] >> 4))
-                    elif msg['lstick'] < 0:
-                        leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'] + (msg['rev']*msg['lstick'] >> 4))
-                        rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
-                    else:
-                        leftMotor.set_pwm(LEFTM_CHA, 0, msg['rev'])
-                        rightMotor.set_pwm(RIGHTM_CHA, 0, msg['rev'])
-                elif msg['fwd'] >= 0:
-                   # print("Forward")
-                    GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-                    GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-                    if msg['lstick'] < 0:
-                       leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'] + (msg['fwd']*msg['lstick'] >> 4))
-                       rightMotor.set_pwm(RIGHTM_CHA, 0,  msg['fwd'])
-                    elif msg['lstick'] > 0:
-                       leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
-                       rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'] - (msg['fwd']*msg['lstick'] >> 4))
-                    else:
-                       leftMotor.set_pwm(LEFTM_CHA, 0, msg['fwd'])
-                       rightMotor.set_pwm(RIGHTM_CHA, 0, msg['fwd'])
-                else:
-                 #   print("Default")
-                    GPIO.output(GPIO_FWD_PIN, GPIO.HIGH) # right
-                    GPIO.output(GPIO_REV_PIN, GPIO.HIGH) # left
-                    if msg['lstick'] < 0:
-                       GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-                       leftMotor.set_pwm(LEFTM_CHA, 0, -(4096*msg['lstick']) >> 4)
-                       rightMotor.set_pwm(RIGHTM_CHA, 0, -(4096*msg['lstick']) >> 4)
-                    elif msg['lstick'] > 0:
-                       GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-                       leftMotor.set_pwm(LEFTM_CHA, 0, (4096*msg['lstick']) >> 4)
-                       rightMotor.set_pwm(RIGHTM_CHA, 0, (4096*msg['lstick']) >> 4)
-                    else:
-                       # print('default state')
-                       leftMotor.set_pwm(LEFTM_CHA, 0, 0)
-                       rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
-                       GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
-                       GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-                await self.send(pickle.dumps(msg))
+                   # print('default state')
+                   leftMotor.set_pwm(LEFTM_CHA, 0, 0)
+                   rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
+                   GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
+                   GPIO.output(GPIO_REV_PIN, GPIO.LOW)
+            await self.send(pickle.dumps(msg))
         except:
             shoulder2.set_all_pwm(0, 0)
             leftMotor.set_all_pwm(0, 0)
