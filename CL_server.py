@@ -4,6 +4,7 @@ import pickle
 import RPi.GPIO as GPIO
 import sys
 import socket
+import _thread
 
 # Web connectivity imports
 import subprocess
@@ -20,7 +21,7 @@ port = 8055
 logger = Logger(__name__)
 
 delay = time.time()
-
+p = 1
 # Suppress output from subprocess
 DEVNULL = open(os.devnull, 'w')
 
@@ -85,8 +86,15 @@ class CLserver(object):
         global p
         logger.debug('new connection to server')
         self._active_connections.add(ws)
+        _thread.start_new_thread(self.test_connection, ())
         while True:
-            await self.test_connection(ws)
+            if p == 2:
+                leftMotor.set_all_pwm(0, 0)
+                rightMotor.set_all_pwm(0, 0)
+            else:
+                #print(p)
+                result = await ws.recv()
+            await self.handle_msg(result)
         self._active_connections.remove(ws)
 
     async def send(self, msg):  
@@ -100,29 +108,33 @@ class CLserver(object):
             asyncio.get_event_loop().close()
             sys.exit(0)
            
-    async def test_connection(self, ws):
+    def test_connection(self):
         global p
         global delay
-        if (1): #(time.time() - delay) >= 0):
-            p = subprocess.call(['./ip_ping.sh'], shell=True, stdout=DEVNULL, stderr=DEVNULL) 
-            if p == 2:
-                print(textColors.WARN + "!!! IP unconfirmed !!!")	
-                delay = time.time()
-                leftMotor.set_all_pwm(0,0)
-                rightMotor.set_all_pwm(0,0)
-            else:
-                #print(textColors.CONF + " IP Confirmed ")
-                delay = time.time()
-                result = await ws.recv()
-                self.handle_msg(result)
+        while True:
+            if ((time.time() - delay) >= 1):
+                p = subprocess.call(['./ip_ping.sh'], shell=True, stdout=DEVNULL, stderr=DEVNULL) 
+                if p == 2:
+                    print(textColors.WARN + "!!! IP unconfirmed !!!")	
+                    delay = time.time()
+                    leftMotor.set_all_pwm(0,0)
+                    rightMotor.set_all_pwm(0,0)
+                else:
+                    print(textColors.CONF + " IP Confirmed ")
+                    delay = time.time()
+            #    try:
+            #        result = await ws.messages.get()
+            #    except:
+            #        result = pickle.dumps("0")
+            #    await self.handle_msg(result)
             		
-    def handle_msg(self, msg):
+    async def handle_msg(self, msg):
         try:
             logger.debug('new message handled')
             global shoulder2_alt
             global shoulder1_alt
             msg = pickle.loads(msg)
-            if msg['valid']:
+            if msg != "0":
                 if msg['lbx']:
                     print("lbump + x")
                 elif msg['x']:  # Left - X
@@ -218,7 +230,7 @@ class CLserver(object):
                        rightMotor.set_pwm(RIGHTM_CHA, 0, 0)
                        GPIO.output(GPIO_FWD_PIN, GPIO.LOW)
                        GPIO.output(GPIO_REV_PIN, GPIO.LOW)
-                self.send(pickle.dumps(msg))
+                await self.send(pickle.dumps(msg))
         except Exception as e:
             print(e)
             shoulder2.set_all_pwm(0, 0)
