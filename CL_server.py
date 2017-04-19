@@ -87,6 +87,7 @@ class CLserver(object):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
         _thread.start_new_thread(self.test_connection, ())
+        #subprocess.call(['./video.sh'], shell=True, stdout=DEVNULL, stderr=DEVNULL)
         while True:
             if p == 2:
                 leftMotor.set_all_pwm(0, 0)
@@ -106,7 +107,6 @@ class CLserver(object):
             shoulder2.set_all_pwm(0, 0)
             self._active_connections = set()
             asyncio.get_event_loop().close()
-            sys.exit(0)
            
     def test_connection(self):
         global p
@@ -119,6 +119,7 @@ class CLserver(object):
                     delay = time.time()
                     leftMotor.set_all_pwm(0,0)
                     rightMotor.set_all_pwm(0,0)
+                    os._exit(1)
                 else:
                     print(textColors.CONF + " IP Confirmed ")
                     delay = time.time()
@@ -235,7 +236,6 @@ class CLserver(object):
             print(e)
             shoulder2.set_all_pwm(0, 0)
             leftMotor.set_all_pwm(0, 0)
-            sys.exit(0)
             asyncio.get_event_loop().close()
 
 try:
@@ -245,5 +245,4 @@ try:
 except:
     shoulder2.set_all_pwm(0, 0)
     leftMotor.set_all_pwm(0, 0)
-    sys.exit(0)
     asyncio.get_event_loop().close()
