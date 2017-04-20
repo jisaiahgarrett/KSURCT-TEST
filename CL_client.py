@@ -42,22 +42,6 @@ async def SendMessage():
             # If leftStick.X > 0 then we want to trim off the right motor to turn right.
             robot['valid'] = 1  # Was testing not spamming controller but that is impossible.
 
-    #        if controller.x() == 1:
-    #            message = 0b0010
-    #        elif controller.y() == 1:
-    #            message = 0b0001
-    #        elif controller.a() == 1:
-    #            message = 0b1000
-    #        elif controller.b() == 1:
-    #            message = 0b0100
-    #        else:
-    #            left_t = int(controller.left_trigger() >> 3)
-    #            right_t = int(controller.right_trigger() >> 3)
-    #            if right_t > 0:
-    #                message = right_t  # Forward (positive value)
-    #            elif left_t > 0:
-    #                message = -left_t  # Reverse (hence the negative)
-
             if(robot):
                 print(robot)
                 await websocket.send(pickle.dumps(robot))
@@ -66,7 +50,6 @@ async def SendMessage():
                 response = await asyncio.wait_for(websocket.recv(), 1)
 
     finally:
-
         await websocket.close()
 
 asyncio.get_event_loop().run_until_complete(SendMessage())
