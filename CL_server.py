@@ -22,18 +22,23 @@ logger = Logger(__name__)
 
 delay = time.time()
 p = 1
+
 # Suppress output from subprocess
 DEVNULL = open(os.devnull, 'w')
 
 # Initialize the servos with default I2C address (0x40)
 shoulder1 = Adafruit_PCA9685.PCA9685(0x40)
 shoulder1.set_pwm_freq(60)				# !! Sets the PWM FOR ALL CHANNELS on 0x40 !!
-shoulder1_alt = 300
+shoulder1_alt = 380
 shoulder2 = Adafruit_PCA9685.PCA9685(0x40)
-shoulder2_alt = 492					#Preset for the shoulder at t0
+shoulder2_alt = 150
 wrist = Adafruit_PCA9685.PCA9685(0x40)
+wrist_alt = 400
 fingers = Adafruit_PCA9685.PCA9685(0x40)
 elbow = Adafruit_PCA9685.PCA9685(0x40)
+elbow_alt = 440
+eyes = Adafruit_PCA9685.PCA9685(0x40)
+eyes_alt = 300
 
 # Initialize the Drive Motors with I2C address (0x41)
 leftMotor = Adafruit_PCA9685.PCA9685(0x41)
@@ -43,40 +48,41 @@ rightMotor = Adafruit_PCA9685.PCA9685(0x41)
 # Servo channel information
 SHOULDER1_CHA = 0
 SHOULDER2_CHA = 1
-EYES_CHA = 2
+EYES_CHA = 5
 WRIST_CHA = 3
 FINGERS_CHA = 4
-ELBOW_CHA = 5
+ELBOW_CHA = 2
 LEFTM_CHA = 14
 RIGHTM_CHA = 15
 
 #Initialize servos to the Vision preset
-shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
-elbow.set_pwm(ELBOW_CHA, 0, 300)
-wrist.set_pwm(WRIST_CHA, 0, 400)
-fingers.set_pwm(FINGERS_CHA, 0, 200)
+#shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
+#elbow.set_pwm(ELBOW_CHA, 0, 300)
+#wrist.set_pwm(WRIST_CHA, 0, 400)
+#fingers.set_pwm(FINGERS_CHA, 0, 200)
 
 # Set up the GPIO pin for toggling reverse/forward motors.
 GPIO.setmode(GPIO.BCM)
-GPIO_FWD_PIN = 18
-GPIO_REV_PIN = 17
+GPIO_FWD_PIN = 19
+GPIO_REV_PIN = 26
 GPIO.setwarnings(False)
 GPIO.setup(GPIO_FWD_PIN, GPIO.OUT)
 GPIO.setup(GPIO_REV_PIN, GPIO.OUT)
 
+GPIO.setup(16, GPIO.OUT)
+GPIO.output(16, GPIO.HIGH)
+
 # The following is a set of definitions for terminal text color
-class textColors:
+class TextColors:
 	WARN = '\033[93m'	# Color used for warnings!
 	CONF = '\033[94m'	# Color used for confirmations
 	PRINT = '\033[92m'	# Color used to distinguish the standard output of p
 	BOLD = '\033[1m'	# Bold text to amplify textclass textColors
-	
+
 class CLserver(object):
     def __init__(self, port):
         self._active_connections = set()
         self.port = port
-        self.counter = 0
-        self.online = True
 
     async def start_server(self):
         logger.info('server starting up')
@@ -87,7 +93,6 @@ class CLserver(object):
         logger.debug('new connection to server')
         self._active_connections.add(ws)
         _thread.start_new_thread(self.test_connection, ())
-        #subprocess.call(['./video.sh'], shell=True, stdout=DEVNULL, stderr=DEVNULL)
         while True:
             if p == 2:
                 leftMotor.set_all_pwm(0, 0)
@@ -115,78 +120,104 @@ class CLserver(object):
             if ((time.time() - delay) >= 1):
                 p = subprocess.call(['./ip_ping.sh'], shell=True, stdout=DEVNULL, stderr=DEVNULL) 
                 if p == 2:
-                    print(textColors.WARN + "!!! IP unconfirmed !!!")	
+                    print(TextColors.WARN + "!!! IP unconfirmed !!!")	
                     delay = time.time()
                     leftMotor.set_all_pwm(0,0)
                     rightMotor.set_all_pwm(0,0)
                     os._exit(1)
                 else:
-                    print(textColors.CONF + " IP Confirmed ")
+                    print(TextColors.CONF + " IP Confirmed ")
                     delay = time.time()
-            #    try:
-            #        result = await ws.messages.get()
-            #    except:
-            #        result = pickle.dumps("0")
-            #    await self.handle_msg(result)
-            		
+
+#    def set_servos(self, channel, input, servoDelay):
+#        global shoulder1, shoulder1_alt
+#        if (time.time() - servoDelay) >= 0.009:
+#            if channel == 0:
+#                shoulder1.set_pwm(channel, 0, shoulder1_alt)
+#                shoulder1_alt += 5
+#                shoulder1_delay = time.time()
+
     async def handle_msg(self, msg):
         try:
             logger.debug('new message handled')
-            global shoulder2_alt
-            global shoulder1_alt
+            global shoulder1_alt, shoulder2_alt, wrist_alt, elbow_alt, eyes_alt
             msg = pickle.loads(msg)
             if msg != "0":
-                if msg['lbx']:
-                    print("lbump + x")
+         #       if msg['lbx']:
+         #           print("lbump + x")
+                if msg['rbx']:
+                    if eyes_alt >= 500:
+                        eyes_alt = 500
+                    eyes.set_pwm(EYES_CHA, 0, eyes_alt)
+                    eyes_alt += 3
                 elif msg['x']:  # Left - X
-                   # print(shoulder1_alt)
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 400)
-                    shoulder1_alt += 5
-                if msg['lbb']:
-                    print("lbump + b")
+                     if shoulder1_alt <= 235:
+                         shoulder1_alt = 235
+                     shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt) 
+                     shoulder1_alt -= 1
+               # if msg['lbb']:
+               #     print("lbump + b")
+                if msg['rbb']:
+                    if eyes_alt <= 140:
+                        eyes_alt = 140
+                    eyes.set_pwm(EYES_CHA, 0, eyes_alt)
+                    eyes_alt -= 3
                 elif msg['b']:
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
-                    shoulder1_alt -= 5
-                else:
-                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 0)
-                    shoulder1_alt = 300
+                    if shoulder1_alt >= 525:
+                        shoulder1_alt = 525
+                    shoulder1.set_pwm(SHOULDER1_CHA, 0, shoulder1_alt)
+                    shoulder1_alt += 1
                 if msg['lby']:
-                    print("lbump + y")
+                   # print("lbump + y")
+                    if wrist_alt >= 530:
+                        wrist_alt = 530
+                    wrist.set_pwm(WRIST_CHA, 0, wrist_alt)
+                    wrist_alt += 1
                 elif msg['rby']:
-                    print("rbump + y")
+                    if elbow_alt <= 240:
+                        elbow_alt = 240
+                    elbow.set_pwm(ELBOW_CHA, 0, elbow_alt)
+                    elbow_alt -= 1
                 elif msg['y']:  # Up - Y
                    # print("Servo up")
-                    if shoulder2_alt >= 600: # servo maximum, make sure we do not go over this value
-                        shoulder2_alt = 599
+                    if shoulder2_alt >= 446: # servo maximum, make sure we do not go over this value
+                        shoulder2_alt = 445
                     shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                    shoulder2_alt += 5 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
-                else:
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
+                    shoulder2_alt += 1 # CHANGE THIS INCREMENT IF NOT FAST/SLOW ENOUGH
                 if msg['lba']:
-                    print("lbump + a")
+                   # print("lbump + a")
+                    if wrist_alt <= 240:
+                        wrist_alt = 240
+                    wrist.set_pwm(WRIST_CHA, 0, wrist_alt)
+                    wrist_alt -= 1
                 elif msg['rba']:
-                    print("rbump + a")
+                    if elbow_alt >= 400:
+                        elbow_alt = 400
+                    elbow.set_pwm(ELBOW_CHA, 0, elbow_alt)
+                    elbow_alt += 1
                 elif msg['a']:  # Down - A
                    # print("Servo down")
-                    if shoulder2_alt <= 299:  # servo minimum, make sure we do not go under this value
-                        shoulder2_alt = 300
+                    if shoulder2_alt <= 150:  # servo minimum, make sure we do not go under this value
+                        shoulder2_alt = 150
                     shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-                    shoulder2_alt -= 5  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
-                else:
-                    shoulder2.set_pwm(SHOULDER2_CHA, 0, shoulder2_alt)
-    #             if msg['vision'] == 1:
-    #                shoulder2.set_pwm(SHOULDER2_CHA, 0, 480)
-    #                wrist.set_pwm(WRIST_CHA, 0, 400)
-    #                elbow.set_pwm(ELBOW_CHA, 0, 300)
-    #                fingers.set_pwm(FINGERS_CHA, 0, 200)
-    #             elif msg['peek'] == 1:
+                    shoulder2_alt -= 1  # CHANGE THIS DECREMENT IF NOT FAST/SLOW ENOUGH
+                if msg['vision'] == 1:
+                    shoulder1.set_pwm(SHOULDER1_CHA, 0, 380)
+                    shoulder1_alt = 380
+                    #wrist.set_pwm(WRIST_CHA, 0, 400)
+                    #elbow.set_pwm(ELBOW_CHA, 0, 300)
+                    #fingers.set_pwm(FINGERS_CHA, 0, 200)
+                elif msg['peek'] == 1:
+                    eyes.set_pwm(EYES_CHA, 0, 162)
     #                shoulder2.set_pwm(SHOULDER2_CHA, 0, 450)
     #                elbow.set_pwm(ELBOW_CHA, 0, 400)
     #                wrist.set_pwm(WRIST_CHA, 0, 500)
+                if msg['neutral']:
+                    eyes.set_pwm(EYES_CHA, 0, 250)
                 if msg['rstick'] > 0:  # Open the fingers
-                    fingers.set_pwm(FINGERS_CHA, 0, 530) #msg['rstick'] << 6)
+                    fingers.set_pwm(FINGERS_CHA, 0, 400)
                 else:
-                    fingers.set_pwm(FINGERS_CHA, 0, 300) #200)
+                    fingers.set_pwm(FINGERS_CHA, 0, 540) #200)
                 if msg['rev'] >= 0:
                     # print("Reverse")
                     GPIO.output(GPIO_REV_PIN, GPIO.HIGH)
@@ -234,7 +265,7 @@ class CLserver(object):
                 await self.send(pickle.dumps(msg))
         except Exception as e:
             print(e)
-            shoulder2.set_all_pwm(0, 0)
+            rightMotor.set_all_pwm(0, 0)
             leftMotor.set_all_pwm(0, 0)
             asyncio.get_event_loop().close()
 
@@ -243,6 +274,6 @@ try:
     asyncio.get_event_loop().run_until_complete(server.start_server())
     asyncio.get_event_loop().run_forever()
 except:
-    shoulder2.set_all_pwm(0, 0)
+    rightMotor.set_all_pwm(0, 0)
     leftMotor.set_all_pwm(0, 0)
     asyncio.get_event_loop().close()
